@@ -20,6 +20,13 @@ huevos, legumbres, fruta, cereales y lácteos.
 - Copia de seguridad de las recetas propias
 - Funciona sin conexión y se puede instalar en el móvil
 
+## Actualizar la app
+
+Sube el `index.html` nuevo y cambia el número de `VERSION` en `sw.js`.
+La próxima vez que se abra la app con conexión, en el ordenador o en el móvil,
+aparece abajo un aviso de versión nueva con un botón para actualizar.
+También hay un botón **Buscar actualización** dentro de la copia de seguridad.
+
 ## Archivos
 
 | Archivo | Para qué sirve |

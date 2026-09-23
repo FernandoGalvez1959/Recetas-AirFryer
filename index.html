@@ -133,6 +133,14 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
 .previa img{width:120px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--linea)}
 .error{color:var(--paprika);font-size:14px;margin-top:14px;min-height:20px}
 .aviso{font-size:13px;color:var(--gris);margin-top:22px;padding-top:14px;border-top:1px solid var(--linea)}
+.aviso-act{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));
+  z-index:50;background:var(--oliva);color:var(--hueso);border-radius:14px;
+  padding:13px 14px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);font-size:15px}
+.aviso-act[hidden]{display:none}
+.aviso-act span{flex:1}
+.aviso-act button{border:0;background:var(--mostaza);color:#3B2C00;font-weight:700;
+  border-radius:9px;padding:9px 14px}
 @media (prefers-reduced-motion:no-preference){
   .capa{animation:aparece .18s ease-out}
   @keyframes aparece{from{opacity:0}to{opacity:1}}
@@ -167,6 +175,11 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
 
 <button class="anadir" id="btnAnadir">+ Añadir receta</button>
 <input type="file" id="fotoRapida" accept="image/*" hidden>
+
+<div class="aviso-act" id="banner" hidden>
+  <span>Hay una versión nueva del recetario.</span>
+  <button id="btnActualizarYa">Actualizar</button>
+</div>
 
 <div class="capa" id="capaFicha" hidden>
   <div class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloFicha">
@@ -234,7 +247,13 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
         <button class="btn" id="restaurar">Restaurar</button>
       </div>
       <p class="error" id="errorCopia" role="alert"></p>
+      <p class="pista" id="sincro"></p>
       <p class="pista" id="espacio"></p>
+      <div class="aviso">
+        <p class="pista" id="version" style="margin:0 0 10px"></p>
+        <button class="btn" id="btnActualizar" style="width:100%">Buscar actualización</button>
+        <p class="pista" id="estadoAct"></p>
+      </div>
     </div>
   </div>
 </div>
@@ -244,6 +263,8 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
    1. Catálogo
    Formato: momento|nombre|tipos|raciones|°C|min|ingredientes|pasos|consejo
    ============================================================ */
+const VERSION = '3.1 · 23-09-2026';
+
 const CRUDO = `
 desayuno|Tostada de tomate y aceite|cereales,verduras|1|180|5|2 rebanadas de pan de hogaza;1 tomate maduro rallado;1 cucharada de aceite de oliva virgen extra;Sal|Tuesta el pan 5 minutos a 180°C dándole la vuelta a mitad;Escurre el tomate rallado y extiéndelo sobre el pan;Riega con el aceite y sala al gusto|Escurre bien el tomate o el pan se reblandece en dos minutos.
 desayuno|Tostada de aguacate y huevo|huevos,verduras,cereales|1|180|9|1 rebanada de pan integral;1 huevo;Medio aguacate;Unas gotas de limón;Sal y pimienta|Tuesta el pan 4 minutos a 180°C y resérvalo;Casca el huevo en un molde pequeño y cocínalo 5 minutos a 180°C;Machaca el aguacate con limón y sal y monta la tostada con el huevo encima|
@@ -568,8 +589,80 @@ async function escribirClave(k, valor){
   try{ if(window.localStorage){ localStorage.setItem(k, texto); return true; } }catch(e){ console.error(e); }
   return false;
 }
-const guardarDatos = () => escribirClave(CLAVE, datos);
-const guardarFotos = () => escribirClave(CLAVE_FOTOS, fotos);
+/* Si la app se abre como artefacto de Claude, los datos viven en su base
+   compartida y se ven igual en el ordenador y en el móvil. Fuera de ahí
+   (GitHub Pages, APK) se guardan en el propio dispositivo. */
+let nube = null;
+
+async function guardarDatos(){
+  if(nube){
+    try{
+      await nube.doc('datos/propias').set({lista: datos.propias});
+      await nube.doc('datos/favoritos').set({ids: datos.favoritos});
+      return true;
+    }catch(e){ console.error(e); return false; }
+  }
+  return escribirClave(CLAVE, datos);
+}
+async function guardarFoto(id, img){
+  fotos[id] = img;
+  if(nube){
+    try{ await nube.doc('fotos/' + id).set({img}); return true; }
+    catch(e){ console.error(e); return false; }
+  }
+  return escribirClave(CLAVE_FOTOS, fotos);
+}
+async function quitarFoto(id){
+  delete fotos[id];
+  if(nube){
+    try{ await nube.doc('fotos/' + id).delete(); return true; }
+    catch(e){ console.error(e); return false; }
+  }
+  return escribirClave(CLAVE_FOTOS, fotos);
+}
+
+function ordenarPropias(){
+  datos.propias.forEach(r => {
+    if(!r.momentos) r.momentos = [r.momento === 'tapa' ? 'tapa-trad' : (r.momento || 'comida')];
+  });
+}
+
+async function conectarNube(){
+  if(typeof claude === 'undefined' || !claude.use) return false;
+  try{ nube = await claude.use('db'); }catch(e){ nube = null; }
+  if(!nube) return false;
+
+  // La primera vez, sube lo que ya hubiera guardado en este dispositivo.
+  try{
+    const yaHay = await nube.doc('datos/propias').get();
+    if(!yaHay.exists && datos.propias.length){
+      await guardarDatos();
+      for(const id of Object.keys(fotos)) await nube.doc('fotos/' + id).set({img: fotos[id]});
+    }
+  }catch(e){ console.error(e); }
+
+  nube.doc('datos/propias').onSnapshot(snap => {
+    const d = snap.exists ? snap.data() : null;
+    datos.propias = (d && Array.isArray(d.lista)) ? d.lista : [];
+    ordenarPropias();
+    pintarRejilla();
+  }, e => console.error(e));
+
+  nube.doc('datos/favoritos').onSnapshot(snap => {
+    const d = snap.exists ? snap.data() : null;
+    datos.favoritos = (d && Array.isArray(d.ids)) ? d.ids : [];
+    pintarRejilla();
+  }, e => console.error(e));
+
+  nube.collection('fotos').onSnapshot(snap => {
+    const m = {};
+    snap.docs.forEach(d => { const v = d.data(); if(v && v.img) m[d.id] = v.img; });
+    fotos = m;
+    pintarRejilla();
+  }, e => console.error(e));
+
+  return true;
+}
 
 /* ============================================================
    3. Dibujo del plato a partir de los ingredientes
@@ -817,8 +910,8 @@ $('ficha').addEventListener('click', async e => {
   }
   if(ft){ $('fotoRapida').click(); }
   if(qf){
-    delete fotos[qf.dataset.quitarfoto];
-    await guardarFotos(); abrirFicha(qf.dataset.quitarfoto); pintarRejilla();
+    await quitarFoto(qf.dataset.quitarfoto);
+    abrirFicha(qf.dataset.quitarfoto); pintarRejilla();
   }
   if(ed){ cerrar('capaFicha'); abrirFormulario(ed.dataset.editar); }
   if(bo){
@@ -826,8 +919,7 @@ $('ficha').addEventListener('click', async e => {
     if(r && confirm(`¿Borrar «${r.nombre}»? No se puede deshacer.`)){
       datos.propias = datos.propias.filter(x => x.id !== id);
       datos.favoritos = datos.favoritos.filter(x => x !== id);
-      delete fotos[id];
-      await guardarDatos(); await guardarFotos(); cerrar('capaFicha'); pintarRejilla();
+      await guardarDatos(); await quitarFoto(id); cerrar('capaFicha'); pintarRejilla();
     }
   }
 });
@@ -841,12 +933,17 @@ function comprimir(archivo){
       const im = new Image();
       im.onerror = rej;
       im.onload = () => {
-        const max = 800, esc = Math.min(1, max / Math.max(im.width, im.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(im.width * esc);
-        c.height = Math.round(im.height * esc);
-        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-        res(c.toDataURL('image/jpeg', 0.68));
+        let salida = '';
+        for(const [max, calidad] of [[800,0.68],[640,0.6],[480,0.55],[360,0.5]]){
+          const esc = Math.min(1, max / Math.max(im.width, im.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(im.width * esc);
+          c.height = Math.round(im.height * esc);
+          c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+          salida = c.toDataURL('image/jpeg', calidad);
+          if(salida.length < 220000) break;   // cabe en la nube del artefacto
+        }
+        res(salida);
       };
       im.src = lector.result;
     };
@@ -857,8 +954,7 @@ $('fotoRapida').addEventListener('change', async e => {
   const a = e.target.files && e.target.files[0];
   e.target.value = '';
   if(!a || !fichaActual) return;
-  fotos[fichaActual] = await comprimir(a);
-  const ok = await guardarFotos();
+  const ok = await guardarFoto(fichaActual, await comprimir(a));
   if(!ok) alert('La foto se ve ahora, pero no ha podido guardarse. Puede que no quede espacio.');
   abrirFicha(fichaActual);
   pintarRejilla();
@@ -951,10 +1047,8 @@ $('guardar').addEventListener('click', async () => {
 
   if(editandoId) datos.propias = datos.propias.map(r => r.id === editandoId ? receta : r);
   else datos.propias.push(receta);
-  if(fotoTemp) fotos[receta.id] = fotoTemp;
-
   const ok = await guardarDatos();
-  await guardarFotos();
+  if(fotoTemp) await guardarFoto(receta.id, fotoTemp);
   if(!ok) err.textContent = 'La receta se ve en pantalla, pero no se ha podido guardar en el dispositivo.';
   cerrar('capaForm'); pintarRejilla(); abrirFicha(receta.id);
 });
@@ -991,20 +1085,78 @@ $('restaurar').addEventListener('click', async () => {
 /* ============================================================
    6. Arranque
    ============================================================ */
+/* ---- actualización automática (ordenador y móvil) ---- */
+let registro = null, recargando = false;
+const mostrarBanner = () => { $('banner').hidden = false; };
+
 if('serviceWorker' in navigator && location.protocol === 'https:'){
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    registro = reg;
+    if(reg.waiting) mostrarBanner();
+    reg.addEventListener('updatefound', () => {
+      const nuevo = reg.installing;
+      if(!nuevo) return;
+      nuevo.addEventListener('statechange', () => {
+        if(nuevo.state === 'installed' && navigator.serviceWorker.controller) mostrarBanner();
+      });
+    });
+    reg.update();
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) reg.update(); });
+    setInterval(() => reg.update(), 30 * 60 * 1000);
+  }).catch(() => {});
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(recargando) return;
+    recargando = true;
+    location.reload();
+  });
 }
+
+$('btnActualizarYa').addEventListener('click', () => {
+  const w = registro && (registro.waiting || registro.installing);
+  if(w) w.postMessage({tipo:'saltar'});
+  else location.reload();
+});
+
+$('btnActualizar').addEventListener('click', async () => {
+  const e = $('estadoAct');
+  e.style.color = 'var(--gris)';
+  e.textContent = 'Comprobando…';
+  if(!registro){
+    e.textContent = 'Recargando la página…';
+    setTimeout(() => location.reload(), 600);
+    return;
+  }
+  try{ await registro.update(); }catch(err){}
+  setTimeout(() => {
+    if(registro.waiting || registro.installing){
+      e.textContent = 'Hay una versión nueva. Pulsa Actualizar en el aviso de abajo.';
+      mostrarBanner();
+    }else{
+      e.textContent = 'Ya tienes la última versión.';
+    }
+  }, 1500);
+});
 (async function inicio(){
   pintarFiltros();
   const g = await leerClave(CLAVE);
   if(g){
     datos.propias = Array.isArray(g.propias) ? g.propias : [];
     datos.favoritos = Array.isArray(g.favoritos) ? g.favoritos : [];
-    datos.propias.forEach(r => {   // recetas guardadas antes de los apartados nuevos
-      if(!r.momentos) r.momentos = [r.momento === 'tapa' ? 'tapa-trad' : (r.momento || 'comida')];
-    });
+    ordenarPropias();
   }
   $('total').textContent = RECETAS.length;
+  $('version').textContent = 'Versión ' + VERSION;
+  pintarRejilla();
+
+  if(await conectarNube()){
+    $('btnActualizar').hidden = true;
+    $('estadoAct').textContent = '';
+    $('sincro').textContent = 'Tus recetas, fotos y favoritas se guardan en la nube de la app: '
+      + 'las mismas en el ordenador y en el móvil, y se actualizan solas.';
+  }else{
+    $('sincro').textContent = 'Tus recetas, fotos y favoritas se guardan en este dispositivo.';
+  }
   const f = await leerClave(CLAVE_FOTOS);
   if(f && typeof f === 'object') fotos = f;
   pintarRejilla();
