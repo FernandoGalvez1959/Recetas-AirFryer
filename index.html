@@ -30,6 +30,18 @@ button{cursor:pointer}
   position:sticky;top:0;z-index:20;padding-top:calc(18px + env(safe-area-inset-top))}
 .panel h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
 .panel .sub{margin:4px 0 12px;font-size:13px;color:#BDC7B2}
+.sinc{display:inline-flex;align-items:center;gap:7px;margin:0 0 11px;
+  background:var(--oliva-2);border:1px solid #5B6E4E;border-radius:999px;
+  padding:5px 12px 5px 10px;font-size:13px;color:#D6DCCB}
+.sinc[hidden]{display:none}
+.sinc i{width:9px;height:9px;border-radius:50%;background:#8FB36A;flex:0 0 auto}
+.sinc.trabajando i{background:var(--mostaza)}
+.sinc.aviso i{background:#E2704A}
+.sinc.local i{background:#9AA88A}
+@media (prefers-reduced-motion:no-preference){
+  .sinc.trabajando i{animation:late 1s ease-in-out infinite}
+  @keyframes late{0%,100%{opacity:1}50%{opacity:.25}}
+}
 .buscador{position:relative;display:flex;align-items:center}
 .buscador input{width:100%;background:var(--papel);border:1px solid var(--linea);
   border-radius:999px;padding:11px 40px 11px 16px;color:#111}
@@ -152,6 +164,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
 <div class="panel">
   <h1>Recetario Air Fryer</h1>
   <p class="sub"><span id="total">—</span> recetas con temperatura y tiempo listos para el cesto.</p>
+  <div class="sinc" id="sinc" hidden><i></i><b>Sincronizado</b></div>
   <div class="buscador">
     <input id="busca" type="text" placeholder="Buscar receta o ingrediente" aria-label="Buscar receta o ingrediente" autocomplete="off">
     <button class="limpiar" id="limpiar" aria-label="Borrar búsqueda" hidden>&times;</button>
@@ -228,7 +241,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
         <button class="btn principal" id="guardar">Guardar receta</button>
         <button class="btn" data-cerrar="capaForm">Cancelar</button>
       </div>
-      <div class="aviso"><button class="btn" id="btnCopias" style="width:100%">Copia de seguridad de mis recetas</button></div>
+      <div class="aviso"><button class="btn" id="btnCopias" style="width:100%">Copia de seguridad</button></div>
     </div>
   </div>
 </div>
@@ -240,13 +253,24 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
       <button class="cerrar" data-cerrar="capaCopia" aria-label="Cerrar">&times;</button>
     </header>
     <div class="contenido">
-      <p class="pista" style="margin-top:0">Copia este texto y guárdalo donde quieras. Para recuperarlo, pégalo aquí y pulsa Restaurar. Las fotografías no se incluyen: ocupan demasiado.</p>
-      <textarea id="copiaTexto" style="min-height:180px"></textarea>
+      <p class="pista" style="margin-top:0">Guarda un archivo con tus recetas, tus fotos y tus favoritas. Si algún día se pierde algo, lo recuperas desde ese mismo archivo.</p>
+      <p class="pista" id="resumenCopia" style="color:var(--tinta);font-weight:600"></p>
       <div class="acciones">
-        <button class="btn principal" id="copiarPortapapeles">Copiar al portapapeles</button>
-        <button class="btn" id="restaurar">Restaurar</button>
+        <button class="btn principal" id="descargarCopia">Descargar copia de seguridad</button>
+        <button class="btn" id="elegirCopia">Restaurar desde un archivo</button>
       </div>
+      <input type="file" id="ficheroCopia" accept=".json,application/json" hidden>
       <p class="error" id="errorCopia" role="alert"></p>
+
+      <details style="margin-top:20px">
+        <summary style="cursor:pointer;font-size:14px;font-weight:600">Copiar y pegar como texto</summary>
+        <p class="pista">Solo las recetas, sin fotos. Sirve para pasarlas por correo o por WhatsApp.</p>
+        <textarea id="copiaTexto" style="min-height:140px"></textarea>
+        <div class="acciones">
+          <button class="btn" id="copiarPortapapeles">Copiar al portapapeles</button>
+          <button class="btn" id="restaurar">Pegar y restaurar</button>
+        </div>
+      </details>
       <p class="pista" id="sincro"></p>
       <p class="pista" id="espacio"></p>
       <div class="aviso">
@@ -589,6 +613,16 @@ async function escribirClave(k, valor){
   try{ if(window.localStorage){ localStorage.setItem(k, texto); return true; } }catch(e){ console.error(e); }
   return false;
 }
+function sincro(clase, texto, volverEn){
+  const el = document.getElementById('sinc');
+  if(!el) return;
+  el.hidden = false;
+  el.className = 'sinc ' + (clase || '');
+  el.querySelector('b').textContent = texto;
+  clearTimeout(sincro.t);
+  if(volverEn) sincro.t = setTimeout(() => sincro('', 'Sincronizado'), volverEn);
+}
+
 /* Si la app se abre como artefacto de Claude, los datos viven en su base
    compartida y se ven igual en el ordenador y en el móvil. Fuera de ahí
    (GitHub Pages, APK) se guardan en el propio dispositivo. */
@@ -596,27 +630,42 @@ let nube = null;
 
 async function guardarDatos(){
   if(nube){
+    sincro('trabajando', 'Sincronizando…');
     try{
       await nube.doc('datos/propias').set({lista: datos.propias});
       await nube.doc('datos/favoritos').set({ids: datos.favoritos});
+      sincro('', 'Sincronizado');
       return true;
-    }catch(e){ console.error(e); return false; }
+    }catch(e){
+      console.error(e);
+      sincro('aviso', 'No se ha podido sincronizar');
+      return false;
+    }
   }
   return escribirClave(CLAVE, datos);
 }
 async function guardarFoto(id, img){
   fotos[id] = img;
   if(nube){
-    try{ await nube.doc('fotos/' + id).set({img}); return true; }
-    catch(e){ console.error(e); return false; }
+    sincro('trabajando', 'Enviando la foto…');
+    try{
+      await nube.doc('fotos/' + id).set({img});
+      sincro('', 'Foto sincronizada', 4000);
+      return true;
+    }catch(e){
+      console.error(e);
+      sincro('aviso', 'La foto no se ha podido sincronizar');
+      return false;
+    }
   }
   return escribirClave(CLAVE_FOTOS, fotos);
 }
 async function quitarFoto(id){
   delete fotos[id];
   if(nube){
-    try{ await nube.doc('fotos/' + id).delete(); return true; }
-    catch(e){ console.error(e); return false; }
+    sincro('trabajando', 'Sincronizando…');
+    try{ await nube.doc('fotos/' + id).delete(); sincro('', 'Sincronizado'); return true; }
+    catch(e){ console.error(e); sincro('aviso', 'No se ha podido sincronizar'); return false; }
   }
   return escribirClave(CLAVE_FOTOS, fotos);
 }
@@ -632,6 +681,8 @@ async function conectarNube(){
   try{ nube = await claude.use('db'); }catch(e){ nube = null; }
   if(!nube) return false;
 
+  sincro('trabajando', 'Conectando…');
+
   // La primera vez, sube lo que ya hubiera guardado en este dispositivo.
   try{
     const yaHay = await nube.doc('datos/propias').get();
@@ -641,26 +692,41 @@ async function conectarNube(){
     }
   }catch(e){ console.error(e); }
 
+  // Si el cambio no lo has hecho tú aquí, viene del otro aparato.
+  let primera = {propias: true, favoritos: true, fotos: true};
+  const deOtroSitio = (clave, snap) => {
+    if(primera[clave]){ primera[clave] = false; return; }
+    if(!snap.metadata.hasPendingWrites) sincro('', 'Actualizado desde tu otro dispositivo', 5000);
+  };
+  const falloNube = e => { console.error(e); sincro('aviso', 'Sincronización interrumpida'); };
+
   nube.doc('datos/propias').onSnapshot(snap => {
     const d = snap.exists ? snap.data() : null;
     datos.propias = (d && Array.isArray(d.lista)) ? d.lista : [];
     ordenarPropias();
     pintarRejilla();
-  }, e => console.error(e));
+    deOtroSitio('propias', snap);
+  }, falloNube);
 
   nube.doc('datos/favoritos').onSnapshot(snap => {
     const d = snap.exists ? snap.data() : null;
     datos.favoritos = (d && Array.isArray(d.ids)) ? d.ids : [];
     pintarRejilla();
-  }, e => console.error(e));
+    deOtroSitio('favoritos', snap);
+  }, falloNube);
 
   nube.collection('fotos').onSnapshot(snap => {
     const m = {};
     snap.docs.forEach(d => { const v = d.data(); if(v && v.img) m[d.id] = v.img; });
     fotos = m;
     pintarRejilla();
-  }, e => console.error(e));
+    deOtroSitio('fotos', snap);
+  }, falloNube);
 
+  window.addEventListener('offline', () => sincro('aviso', 'Sin conexión'));
+  window.addEventListener('online', () => sincro('', 'Sincronizado'));
+
+  sincro('', 'Sincronizado');
   return true;
 }
 
@@ -1054,11 +1120,100 @@ $('guardar').addEventListener('click', async () => {
 });
 
 /* ---------- copia de seguridad ---------- */
+function paqueteCopia(){
+  return JSON.stringify({
+    app: 'recetario-air-fryer',
+    version: VERSION,
+    fecha: new Date().toISOString(),
+    propias: datos.propias,
+    favoritos: datos.favoritos,
+    fotos: fotos
+  });
+}
+function nombreCopia(){
+  const d = new Date();
+  const dos = n => String(n).padStart(2, '0');
+  return `recetario-${d.getFullYear()}-${dos(d.getMonth()+1)}-${dos(d.getDate())}.json`;
+}
+
+$('descargarCopia').addEventListener('click', async () => {
+  const e = $('errorCopia');
+  e.style.color = 'var(--gris)';
+  e.textContent = 'Preparando la copia…';
+  const texto = paqueteCopia();
+  const nombre = nombreCopia();
+  try{
+    const bajar = (typeof claude !== 'undefined' && claude.use) ? await claude.use('downloads') : null;
+    if(bajar){
+      await bajar.save({filename: nombre, data: new Blob([texto], {type: 'application/json'})});
+      e.textContent = 'Copia guardada: ' + nombre;
+      return;
+    }
+  }catch(err){
+    if(err && err.code === 'declined'){ e.textContent = ''; return; }
+    console.error(err);
+  }
+  try{
+    const url = URL.createObjectURL(new Blob([texto], {type: 'application/json'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    e.textContent = 'Copia descargada: ' + nombre;
+  }catch(err){
+    e.style.color = 'var(--paprika)';
+    e.textContent = 'No se ha podido descargar la copia en este dispositivo.';
+  }
+});
+
+$('elegirCopia').addEventListener('click', () => $('ficheroCopia').click());
+
+$('ficheroCopia').addEventListener('change', async ev => {
+  const f = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if(!f) return;
+  const e = $('errorCopia');
+  try{
+    const d = JSON.parse(await f.text());
+    const lista = Array.isArray(d) ? d : d.propias;
+    if(!Array.isArray(lista)) throw new Error('formato');
+    const ids = new Set(datos.propias.map(r => r.id));
+    let nuevas = 0;
+    lista.forEach(r => { if(r && r.id && !ids.has(r.id)){ datos.propias.push(r); nuevas++; } });
+    if(Array.isArray(d.favoritos))
+      d.favoritos.forEach(id => { if(!datos.favoritos.includes(id)) datos.favoritos.push(id); });
+    ordenarPropias();
+    await guardarDatos();
+
+    let conFoto = 0;
+    if(d.fotos && typeof d.fotos === 'object'){
+      for(const id of Object.keys(d.fotos)){
+        if(!fotos[id] && d.fotos[id]){ await guardarFoto(id, d.fotos[id]); conFoto++; }
+      }
+    }
+    pintarRejilla();
+    resumenCopia();
+    e.style.color = 'var(--gris)';
+    e.textContent = `Restaurado: ${nuevas} receta(s) y ${conFoto} foto(s). Lo que ya tenías se ha respetado.`;
+  }catch(err){
+    console.error(err);
+    e.style.color = 'var(--paprika)';
+    e.textContent = 'Ese archivo no es una copia del recetario.';
+  }
+});
+
+function resumenCopia(){
+  const nf = Object.keys(fotos).length;
+  const kb = Math.round(paqueteCopia().length / 1024);
+  $('resumenCopia').textContent =
+    `${datos.propias.length} receta(s) tuya(s) y ${nf} foto(s) · unos ${kb} KB`;
+}
+
 $('btnCopias').addEventListener('click', () => {
   $('copiaTexto').value = JSON.stringify({propias: datos.propias, favoritos: datos.favoritos});
   $('errorCopia').textContent = '';
-  const kb = Math.round(JSON.stringify(fotos).length / 1024);
-  $('espacio').textContent = `Fotografías guardadas: ${Object.keys(fotos).length} (${kb} KB). A partir de unos 4000 KB conviene quitar alguna.`;
+  $('espacio').textContent = '';
+  resumenCopia();
   abrir('capaCopia');
 });
 $('copiarPortapapeles').addEventListener('click', async () => {
@@ -1155,6 +1310,7 @@ $('btnActualizar').addEventListener('click', async () => {
     $('sincro').textContent = 'Tus recetas, fotos y favoritas se guardan en la nube de la app: '
       + 'las mismas en el ordenador y en el móvil, y se actualizan solas.';
   }else{
+    sincro('local', 'Guardado en este dispositivo');
     $('sincro').textContent = 'Tus recetas, fotos y favoritas se guardan en este dispositivo.';
   }
   const f = await leerClave(CLAVE_FOTOS);
