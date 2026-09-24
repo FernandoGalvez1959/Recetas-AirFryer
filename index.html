@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Recetario Air Fryer</title>
+<title>Recetario Air Fryer y Ensaladas</title>
 <meta name="theme-color" content="#2E3A26">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
@@ -162,7 +162,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
 <body>
 
 <div class="panel">
-  <h1>Recetario Air Fryer</h1>
+  <h1>Recetario Air Fryer<br>y Ensaladas</h1>
   <p class="sub"><span id="total">—</span> recetas con temperatura y tiempo listos para el cesto.</p>
   <button class="sinc" id="sinc" hidden><i></i><b>Sincronizado</b></button>
   <div class="buscador">
@@ -327,7 +327,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
    1. Catálogo
    Formato: momento|nombre|tipos|raciones|°C|min|ingredientes|pasos|consejo
    ============================================================ */
-const VERSION = '3.1 · 23-09-2026';
+const VERSION = '4.0 · 24-09-2026';
 
 const CRUDO = `
 desayuno|Tostada de tomate y aceite|cereales,verduras|1|180|5|2 rebanadas de pan de hogaza;1 tomate maduro rallado;1 cucharada de aceite de oliva virgen extra;Sal|Tuesta el pan 5 minutos a 180°C dándole la vuelta a mitad;Escurre el tomate rallado y extiéndelo sobre el pan;Riega con el aceite y sala al gusto|Escurre bien el tomate o el pan se reblandece en dos minutos.
@@ -557,6 +557,36 @@ cena-ligera|Espinacas y champiñones al ajillo|verduras|2|190|12|300 g de champi
 cena-ligera|Pimientos y tomates asados con huevo|verduras,huevos|2|185|18|2 pimientos rojos;2 tomates;2 huevos;1 cucharada de aceite;Sal y orégano|Corta los pimientos y los tomates en tiras y mézclalos con el aceite;Cocina 12 minutos a 185°C;Casca los huevos encima y termina 6 minutos|
 cena-ligera|Brochetas de gambas y calabacín|pescado,verduras|2|200|10|16 gambas peladas;1 calabacín en rodajas;1 cucharadita de aceite;Ajo en polvo;Perejil y sal|Monta las brochetas alternando gamba y calabacín;Pincela con el aceite y el ajo;Cocina 10 minutos a 200°C girándolas a mitad|
 cena-ligera|Gallo con judías verdes|pescado,verduras|2|185|14|2 gallos limpios;250 g de judías verdes cocidas;2 dientes de ajo;1 cucharada de aceite;Limón y sal|Mezcla las judías con el aceite y el ajo y cocínalas 6 minutos a 185°C;Coloca el pescado encima;Termina 8 minutos y riega con limón|
+ensalada|Ensalada de pollo crujiente y romana|aves,verduras,cereales|2|200|14|2 filetes de pechuga de pollo;1 clara de huevo;50 g de pan rallado;1 lechuga romana;2 cucharadas de yogur;Mostaza, limón y sal|Empana el pollo con la clara y el pan rallado y rocíalo con aceite;Cocina 14 minutos a 200°C dándole la vuelta a mitad;Córtalo en tiras sobre la romana y aliña con el yogur mezclado con mostaza y limón|Deja reposar el pollo 3 minutos antes de cortarlo o suelta todo el jugo.
+ensalada|Ensalada césar ligera con picatostes|aves,cereales,lacteos|2|190|16|2 rebanadas de pan del día anterior;1 pechuga de pollo;1 lechuga romana;30 g de parmesano;2 cucharadas de yogur griego;1 anchoa, limón y mostaza|Corta el pan en dados, mézclalo con una cucharadita de aceite y cocínalo 6 minutos a 190°C;Cocina el pollo 16 minutos a 190°C y córtalo en tiras;Bate el yogur con la anchoa picada, la mostaza y el limón y monta la ensalada con el parmesano|La salsa con yogur en vez de huevo y aceite quita la mitad de las calorías.
+ensalada|Ensaladilla rusa con patata asada|verduras,pescado,huevos|4|195|25|3 patatas en dados;2 zanahorias en dados;100 g de guisantes;2 latas de atún;2 huevos duros;3 cucharadas de mayonesa ligera|Mezcla la patata y la zanahoria con una cucharadita de aceite y cocina 25 minutos a 195°C;Deja enfriar del todo y mezcla con los guisantes, el atún y el huevo picado;Liga con la mayonesa y deja una hora en la nevera|Asada en vez de cocida, la patata no queda aguada y sabe mucho más.
+ensalada|Ensalada de boniato, aguacate y canónigos|verduras,fruta|2|195|20|1 boniato en dados;1 aguacate;100 g de canónigos;20 g de nueces;1 cucharada de aceite;Limón, sal y pimienta|Mezcla el boniato con el aceite y cocina 20 minutos a 195°C agitando a mitad;Deja templar y monta sobre los canónigos con el aguacate en gajos;Reparte las nueces y aliña con limón|
+ensalada|Ensalada templada de garbanzos y espinacas|legumbres,verduras|2|190|15|1 bote de garbanzos cocidos;150 g de espinacas frescas;1 cucharada de aceite;1 cucharadita de pimentón;1 diente de ajo;Vinagre de Jerez|Escurre y seca los garbanzos y mézclalos con el aceite y el pimentón;Cocina 15 minutos a 190°C agitando cada 5 minutos;Viértelos calientes sobre las espinacas con el ajo picado y un chorro de vinagre|El calor de los garbanzos es lo que ablanda la espinaca: no hace falta cocerla.
+ensalada|Ensalada de calabaza asada y queso de cabra|verduras,lacteos|2|195|22|500 g de calabaza en dados;80 g de queso de cabra;80 g de rúcula;20 g de pipas de calabaza;1 cucharada de aceite;Miel y vinagre|Mezcla la calabaza con el aceite y cocina 22 minutos a 195°C;Monta sobre la rúcula con el queso desmigado y las pipas;Aliña con una cucharadita de miel y unas gotas de vinagre|
+ensalada|Ensalada de remolacha asada y naranja|verduras,fruta|2|190|30|3 remolachas crudas;1 naranja;1 cebolla morada;50 g de canónigos;1 cucharada de aceite;Sal y pimienta|Envuelve las remolachas en papel de aluminio y cocínalas 30 minutos a 190°C;Pélalas templadas y córtalas en gajos;Monta con la naranja en rodajas, la cebolla en pluma y los canónigos, y aliña|Pélalas con guantes o te teñirás las manos un buen rato.
+ensalada|Ensalada de coliflor asada y granada|verduras,fruta|3|200|18|Media coliflor en ramilletes;1 granada;50 g de rúcula;20 g de almendra laminada;1 cucharada de aceite;Comino y limón|Mezcla la coliflor con el aceite y el comino y cocina 18 minutos a 200°C;Deja templar y mezcla con la rúcula, los granos de granada y la almendra;Aliña con limón|
+ensalada|Ensalada de pimientos asados y atún|verduras,pescado|2|190|20|2 pimientos rojos;2 pimientos verdes;2 latas de atún;1 diente de ajo;2 cucharadas de aceite;Sal|Cocina los pimientos enteros 20 minutos a 190°C dándoles la vuelta a mitad;Tápalos 10 minutos con un paño, pélalos y córtalos en tiras;Mezcla con el atún, el ajo laminado y el aceite|El paño encima es el truco: el vapor despega la piel sola.
+ensalada|Ensalada de berenjena asada con yogur y menta|verduras,lacteos|2|190|18|2 berenjenas en dados;150 g de yogur griego;1 diente de ajo;Menta fresca;1 cucharada de aceite;Limón y sal|Sala la berenjena, déjala escurrir 20 minutos y sécala;Mézclala con el aceite y cocina 18 minutos a 190°C agitando a mitad;Sirve sobre el yogur batido con el ajo, el limón y la menta|
+ensalada|Ensalada de quinoa y verduras asadas|cereales,verduras|3|195|20|200 g de quinoa cocida;1 calabacín;1 pimiento rojo;1 cebolla roja;1 cucharada de aceite;Limón, perejil y sal|Corta las verduras en dados y mézclalas con el aceite;Cocina 20 minutos a 195°C agitando cada 7 minutos;Mezcla con la quinoa fría y aliña con limón y perejil|Aguanta tres días en la nevera y se come fría: buena para llevar.
+ensalada|Ensalada de lentejas y tomate asado|legumbres,verduras|3|180|20|300 g de lentejas cocidas;12 tomates cherry;1 cebolleta;1 cucharada de aceite;Orégano;Vinagre y sal|Cocina los cherry con media cucharada de aceite 20 minutos a 180°C hasta que se abran;Mézclalos con las lentejas y la cebolleta picada;Aliña con el resto del aceite, el vinagre y el orégano|
+ensalada|Ensalada de judías verdes, patata y huevo|verduras,huevos|2|195|22|250 g de judías verdes cocidas;2 patatas en dados;2 huevos duros;1 cebolleta;1 cucharada de aceite;Vinagre y sal|Cocina la patata con el aceite 22 minutos a 195°C;Mézclala templada con las judías y la cebolleta;Corona con el huevo en cuartos y aliña|
+ensalada|Ensalada murciana|verduras,pescado,huevos|2|185|20|4 tomates maduros;1 lata de atún;2 huevos duros;1 cebolla;Aceitunas negras;Aceite y sal|Cocina los tomates enteros 20 minutos a 185°C y pélalos templados;Trocéalos y mézclalos con la cebolla picada y el atún;Corona con el huevo y las aceitunas y aliña con aceite|El tomate asado sustituye al de conserva y sabe muchísimo mejor.
+ensalada|Ensalada de espárragos verdes y jamón|verduras,carnes|2|195|12|1 manojo de espárragos verdes;60 g de jamón serrano;50 g de rúcula;20 g de piñones;1 cucharada de aceite;Vinagre de Módena|Cocina los espárragos con el aceite 10 minutos a 195°C;Añade los piñones y el jamón en tiras y dales 2 minutos;Sirve sobre la rúcula y aliña con el vinagre|
+ensalada|Ensalada de salmón y aguacate|pescado,verduras|2|180|12|2 lomos de salmón;1 aguacate;100 g de brotes verdes;1 cucharadita de aceite;Eneldo;Limón y sal|Cocina el salmón 12 minutos a 180°C y déjalo templar;Desmígalo en lascas sobre los brotes con el aguacate;Aliña con limón, aceite y eneldo|
+ensalada|Ensalada de gambas al ajillo y rúcula|pescado,verduras|2|200|8|250 g de gambas peladas;3 dientes de ajo;80 g de rúcula;12 tomates cherry;1 cucharada de aceite;Guindilla y limón|Mezcla las gambas con el aceite, el ajo y la guindilla;Cocina 8 minutos a 200°C;Viértelas calientes con su jugo sobre la rúcula y los cherry|
+ensalada|Remojón de bacalao y naranja|pescado,fruta|2|185|15|200 g de bacalao desalado;2 naranjas;1 cebolleta;Aceitunas negras;2 cucharadas de aceite;Sal|Cocina el bacalao 15 minutos a 185°C y desmígalo;Pela las naranjas a lo vivo y córtalas en rodajas;Monta con la cebolleta, las aceitunas y el bacalao, y riega con el aceite|
+ensalada|Ensalada de pasta con verduras asadas|cereales,verduras|3|195|20|250 g de pasta corta cocida;1 calabacín;1 berenjena;1 pimiento;1 cucharada de aceite;Albahaca y sal|Corta las verduras en dados y mézclalas con el aceite;Cocina 20 minutos a 195°C agitando cada 7 minutos;Mezcla con la pasta fría y la albahaca|
+ensalada|Ensalada de arroz, pollo y maíz|cereales,aves,verduras|3|190|18|250 g de arroz cocido;1 pechuga de pollo;1 lata de maíz;1 pimiento rojo;2 cucharadas de mayonesa ligera;Curry y sal|Cocina el pollo con el pimiento en dados 18 minutos a 190°C;Deja enfriar y mezcla con el arroz y el maíz;Liga con la mayonesa y una pizca de curry|
+ensalada|Ensalada griega con halloumi|lacteos,verduras|2|190|10|200 g de halloumi en dados;2 tomates;1 pepino;1 cebolla morada;Aceitunas negras;Orégano y aceite|Cocina el halloumi 10 minutos a 190°C hasta que se dore;Mezcla el tomate, el pepino, la cebolla y las aceitunas;Reparte el queso caliente por encima con el orégano y el aceite|
+ensalada|Ensalada caprese templada|verduras,lacteos|2|180|12|4 tomates en rodajas gruesas;125 g de mozzarella;Albahaca;1 cucharada de aceite;Vinagre de Módena y sal|Cocina los tomates 12 minutos a 180°C sobre papel de horno;Colócalos templados alternando con la mozzarella;Termina con albahaca, aceite y unas gotas de vinagre|
+ensalada|Ensalada de champiñones y nueces|verduras,fruta|2|190|12|300 g de champiñones laminados;80 g de canónigos;30 g de nueces;1 diente de ajo;1 cucharada de aceite;Limón y sal|Cocina los champiñones con el aceite 10 minutos a 190°C;Añade el ajo picado y las nueces y dales 2 minutos;Sirve sobre los canónigos con un chorro de limón|
+ensalada|Ensalada de zanahoria asada con comino|verduras,lacteos|2|195|20|4 zanahorias en bastones;150 g de yogur griego;1 cucharadita de comino;20 g de pipas;1 cucharada de aceite;Limón y sal|Mezcla la zanahoria con el aceite y el comino;Cocina 20 minutos a 195°C agitando a mitad;Sirve sobre el yogur con limón y las pipas|
+ensalada|Ensalada de brócoli, almendra y pasas|verduras,fruta|3|195|12|1 brócoli en ramilletes;30 g de almendra laminada;30 g de pasas;2 cucharadas de yogur;1 cucharada de aceite;Limón y sal|Mezcla el brócoli con el aceite y cocina 12 minutos a 195°C;Deja templar y mezcla con las pasas y la almendra;Aliña con el yogur y el limón|
+ensalada|Ensalada de tofu crujiente y col|legumbres,verduras|2|200|15|250 g de tofu firme en dados;200 g de col en juliana;1 zanahoria rallada;1 cucharada de maicena;2 cucharadas de soja;Aceite de sésamo|Prensa el tofu, marínalo con la soja y rebózalo en maicena;Cocina 15 minutos a 200°C agitando cada 5 minutos;Mezcla la col con la zanahoria, añade el tofu y aliña con el sésamo|
+ensalada|Ensalada de pera asada y queso azul|fruta,lacteos|2|185|15|2 peras en gajos;60 g de queso azul;80 g de rúcula;20 g de nueces;1 cucharadita de miel;Vinagre y aceite|Cocina las peras 15 minutos a 185°C;Móntalas templadas sobre la rúcula con el queso desmigado;Termina con las nueces, la miel y unas gotas de vinagre|
+ensalada|Ensalada de manzana, apio y nueces|fruta,verduras|2|170|8|2 manzanas;2 ramas de apio;40 g de nueces;3 cucharadas de yogur;1 cucharadita de mostaza;Limón|Tuesta las nueces 8 minutos a 170°C y déjalas enfriar;Corta la manzana y el apio en bastones y riégalos con limón;Aliña con el yogur mezclado con la mostaza y añade las nueces|Tostar las nueces cambia la ensalada entera: no te saltes ese paso.
+ensalada|Ensalada de calabacín asado y menta|verduras,lacteos|2|195|14|2 calabacines en cintas;60 g de queso feta;Menta fresca;20 g de piñones;1 cucharada de aceite;Limón y sal|Mezcla las cintas de calabacín con el aceite y cocina 14 minutos a 195°C;Deja templar y reparte el feta desmigado y los piñones;Aliña con limón y menta picada|
+ensalada|Patatas aliñadas con atún|verduras,pescado|3|195|25|4 patatas en dados;2 latas de atún;1 cebolleta;Perejil;3 cucharadas de aceite;Vinagre y sal|Mezcla la patata con una cucharada de aceite y cocina 25 minutos a 195°C;Déjala templar y mézclala con el atún y la cebolleta picada;Aliña con el resto del aceite, el vinagre y el perejil|Alíñalas en templado, que es cuando la patata absorbe el aliño.
 `.trim();
 
 const MOMENTOS = [
@@ -566,7 +596,8 @@ const MOMENTOS = [
   ['tapa-mod','Tapas modernas'],
   ['comida','Comidas'],
   ['cena','Cenas'],
-  ['cena-ligera','Cenas ligeras']
+  ['cena-ligera','Cenas ligeras'],
+  ['ensalada','Ensaladas']
 ];
 
 /* Recetas que además pertenecen a otra categoría. Basta añadir el nombre exacto. */
@@ -594,6 +625,11 @@ const TAMBIEN_CENA_LIGERA = ['Salmón con eneldo y limón','Verduras asadas vari
   'Salmón con puerro y limón','Gallo al horno con ajo','Coliflor asada con comino y yogur',
   'Tortilla de calabacín','Tofu con verduras y soja'];
 
+const TAMBIEN_ENSALADA = ['Ensalada templada de pollo y boniato',
+  'Sardinas con ensalada templada','Calabacín con feta y menta',
+  'Pavo a la plancha con canónigos','Coliflor asada con comino y yogur',
+  'Verduras asadas variadas','Tosta de salmón y aguacate'];
+
 function momentosDe(bruto, nombre){
   const m = new Set();
   bruto.split(',').forEach(k => {
@@ -602,6 +638,7 @@ function momentosDe(bruto, nombre){
   });
   if(TAMBIEN_MERIENDA.includes(nombre)) m.add('merienda');
   if(TAMBIEN_CENA_LIGERA.includes(nombre)) m.add('cena-ligera');
+  if(TAMBIEN_ENSALADA.includes(nombre)) m.add('ensalada');
   return [...m];
 }
 const TIPOS = [['carnes','Carnes'],['aves','Aves'],['pescado','Pescado'],['verduras','Verduras'],
@@ -609,7 +646,7 @@ const TIPOS = [['carnes','Carnes'],['aves','Aves'],['pescado','Pescado'],['verdu
 const COLOR_TIPO = {carnes:'#8C3A2B',aves:'#C89A57',pescado:'#DB8C79',verduras:'#4E7A3A',
   huevos:'#E8C64A',legumbres:'#B07A3C',fruta:'#D0644F',cereales:'#C9A15B',lacteos:'#EFE7D6'};
 const FONDO = {desayuno:'#F2E9D4',merienda:'#F1E6CE','tapa-trad':'#EFE3C8','tapa-mod':'#ECE6D2',
-  comida:'#EEE2C6',cena:'#EAE7D6','cena-ligera':'#E8EADA'};
+  comida:'#EEE2C6',cena:'#EAE7D6','cena-ligera':'#E8EADA',ensalada:'#E6EBDA'};
 
 const RECETAS = CRUDO.split('\n').filter(l => l.trim()).map((linea, i) => {
   const p = linea.split('|');
