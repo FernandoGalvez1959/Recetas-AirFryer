@@ -222,6 +222,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
         <div><label for="fTemp">Temperatura (°C)</label><input id="fTemp" type="number" min="60" max="240" step="5" placeholder="180"></div>
         <div><label for="fMin">Tiempo (min)</label><input id="fMin" type="number" min="1" max="180" placeholder="15"></div>
       </div>
+      <p class="pista">Si la receta no pasa por la freidora, una ensalada fría por ejemplo, deja estas dos casillas vacías.</p>
       <label for="fRaciones">Raciones</label>
       <input id="fRaciones" type="number" min="1" max="12" placeholder="2">
       <label for="fIng">Ingredientes</label>
@@ -327,7 +328,7 @@ textarea{min-height:104px;resize:vertical;line-height:1.45}
    1. Catálogo
    Formato: momento|nombre|tipos|raciones|°C|min|ingredientes|pasos|consejo
    ============================================================ */
-const VERSION = '4.0 · 24-09-2026';
+const VERSION = '4.1 · 24-09-2026';
 
 const CRUDO = `
 desayuno|Tostada de tomate y aceite|cereales,verduras|1|180|5|2 rebanadas de pan de hogaza;1 tomate maduro rallado;1 cucharada de aceite de oliva virgen extra;Sal|Tuesta el pan 5 minutos a 180°C dándole la vuelta a mitad;Escurre el tomate rallado y extiéndelo sobre el pan;Riega con el aceite y sala al gusto|Escurre bien el tomate o el pan se reblandece en dos minutos.
@@ -1071,6 +1072,22 @@ const escapar = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;'
 const nombreMomento = k => (MOMENTOS.find(m => m[0]===k) || ['','—'])[1];
 const nombreTipo = k => (TIPOS.find(t => t[0]===k) || [k,k])[1];
 const todas = () => RECETAS.concat(datos.propias);
+const enFrio = r => !r.temp && !r.min;
+
+function lecturaDe(r){
+  if(enFrio(r)) return '<span class="lectura"><span><b>En frío</b><span>sin freidora</span></span></span>';
+  const t = r.temp ? `<span><b>${r.temp}°</b><span>C</span></span>` : '';
+  const m = r.min ? `<span><b>${r.min}</b><span>min</span></span>` : '';
+  return `<span class="lectura">${t}${m}</span>`;
+}
+function medidasDe(r){
+  const c = [];
+  if(r.temp) c.push(`<div><b>${r.temp}°C</b><small>temperatura</small></div>`);
+  if(r.min) c.push(`<div><b>${r.min}</b><small>minutos</small></div>`);
+  if(enFrio(r)) c.push('<div><b>En frío</b><small>no va a la freidora</small></div>');
+  c.push(`<div><b>${r.raciones || 2}</b><small>raciones</small></div>`);
+  return '<div class="medidas">' + c.join('') + '</div>';
+}
 const fotoDe = r => fotos[r.id] || null;
 
 function pintarFiltros(){
@@ -1131,7 +1148,7 @@ function pintarRejilla(){
       <span class="cuerpo">
         <h3>${escapar(r.nombre)}</h3>
         <span class="etiquetas">${r.tipos.map(t => `<span class="etq">${nombreTipo(t)}</span>`).join('')}</span>
-        <span class="lectura"><span><b>${r.temp}°</b><span>C</span></span><span><b>${r.min}</b><span>min</span></span></span>
+        ${lecturaDe(r)}
       </span></button>`;
   }).join('');
 }
@@ -1159,11 +1176,7 @@ function abrirFicha(id){
     </div>
     <h3>${escapar(r.nombre)}</h3>
     <div class="etiquetas">${r.tipos.map(t => `<span class="etq">${nombreTipo(t)}</span>`).join('')}</div>
-    <div class="medidas">
-      <div><b>${r.temp}°C</b><small>temperatura</small></div>
-      <div><b>${r.min}</b><small>minutos</small></div>
-      <div><b>${r.raciones || 2}</b><small>raciones</small></div>
-    </div>
+    ${medidasDe(r)}
     <h4>Ingredientes</h4>
     <ul>${r.ing.map(i => `<li>${escapar(i)}</li>`).join('')}</ul>
     <h4>Preparación</h4>
@@ -1310,12 +1323,16 @@ $('guardar').addEventListener('click', async () => {
   if(!nombre){ err.textContent = 'Ponle un nombre a la receta.'; return; }
   if(!momentos.length){ err.textContent = 'Marca al menos un apartado (desayunos, tapas, cenas...).'; return; }
   if(!tipos.length){ err.textContent = 'Marca al menos un tipo de alimento para clasificarla.'; return; }
-  if(!temp || temp < 60 || temp > 240){ err.textContent = 'La temperatura debe estar entre 60 y 240 °C.'; return; }
-  if(!min || min < 1){ err.textContent = 'Indica cuántos minutos necesita.'; return; }
+  if($('fTemp').value.trim() && (!temp || temp < 60 || temp > 240)){
+    err.textContent = 'La temperatura debe estar entre 60 y 240 °C, o vacía si la receta es fría.'; return;
+  }
+  if($('fMin').value.trim() && (!min || min < 1)){
+    err.textContent = 'El tiempo debe ser de al menos 1 minuto, o estar vacío si la receta es fría.'; return;
+  }
 
   const receta = {
     id: editandoId || ('p' + Date.now()), propia: true, nombre,
-    momentos, tipos, temp, min,
+    momentos, tipos, temp: temp || null, min: min || null,
     raciones: parseInt($('fRaciones').value,10) || 2,
     ing: $('fIng').value.split('\n').map(s => s.trim()).filter(Boolean),
     pasos: $('fPasos').value.split('\n').map(s => s.trim()).filter(Boolean),
